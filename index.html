@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Telecom Services Catalog</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12"></script>
+    <script type="module">
+        import { getCatalog } from './catalog.js';
+
+        new Vue({
+            el: '#app',
+            data: {
+                customerType: '',
+                services: [],
+                total: 0,
+                order: ''
+            },
+            methods: {
+                fetchCatalog() {
+                    try {
+                        if (this.customerType) {
+                            console.log(`Fetching catalog for ${this.customerType}`);
+                            this.services = getCatalog(this.customerType).map(service => ({
+                                ...service, 
+                                selected: false, 
+                                quantity: 0 
+                            }));
+                            console.log('Catalog fetched:', this.services);
+                        } else {
+                            alert("Please select a customer type.");
+                        }
+                    } catch (error) {
+                        console.error('Error fetching catalog:', error);
+                        alert("Error fetching catalog. Please check if 'catalog.js' is in the correct directory.");
+                    }
+                },
+                calculateTotal() {
+                    this.total = this.services.reduce((sum, service) => {
+                        return sum + (service.selected ? service.price * service.quantity : 0);
+                    }, 0);
+                },
+                toggleQuantity(service) {
+                    if (service.selected) {
+                        service.quantity = 1;
+                    } else {
+                        service.quantity = 0;
+                    }
+                },
+                submitOrder() {
+                    const selectedServices = this.services.filter(service => service.selected);
+                    const orderDetails = selectedServices.map(service => ({
+                        id: service.id,
+                        name: service.name,
+                        description: service.description,
+                        price: service.price,
+                        quantity: service.quantity
+                    }));
+                    this.order = JSON.stringify({ order: orderDetails, total: this.total }, null, 2);
+                }
+            }
+        });
+    </script>
+    <style>
+        .service {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .service div {
+            margin-right: 10px;
+        }
+        .total {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .button {
+            margin-top: 10px;
+        }
+        .quantity {
+            width: 50px;
+            margin-left: 10px;
+        }
+        .disabled {
+            background-color: #e9e9e9;
+        }
+        .order {
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>Mobile Telecom Services Catalog</h1>
+        <div>
+            <label>
+                <input type="radio" value="Residential" v-model="customerType"> Residential
+            </label>
+            <label>
+                <input type="radio" value="Business" v-model="customerType"> Business
+            </label>
+            <label>
+                <input type="radio" value="Partner" v-model="customerType"> Partner
+            </label>
+            <button @click="fetchCatalog">Get Catalog</button>
+        </div>
+        <div v-for="service in services" :key="service.id" class="service" v-show="services.length > 0">
+            <input type="checkbox" v-model="service.selected" @change="toggleQuantity(service)">
+            <div>{{ service.id }}</div>
+            <div>{{ service.name }}</div>
+            <div>{{ service.description }}</div>
+            <div>${{ service.price }}</div>
+            <input type="number" class="quantity" v-model="service.quantity" :disabled="!service.selected" min="1">
+        </div>
+        <div class="button">
+            <button @click="calculateTotal" v-show="services.length > 0">Calculate Total</button>
+            <button @click="submitOrder" v-show="services.length > 0">Submit</button>
+        </div>
+        <div class="total" v-show="services.length > 0">Total: ${{ total }}</div>
+        <div class="order">{{ order }}</div>
+    </div>
+</body>
+</html>
